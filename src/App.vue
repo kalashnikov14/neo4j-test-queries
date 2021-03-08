@@ -5,20 +5,21 @@
   <button @click="testQuery()">Connect</button>
       <br>
       <br>
-      <button @click="results()">results</button>
       <br>
       <button @click="log()">log</button>
     </div>
-    <div>
+    <div v-for="n in output"
+         :key="n">
       <br>
-      title: {{output.title}}
+      title: {{n.title}}
       <br>
-      seller: {{output.sellerName}}
+      seller: {{n.sellerName}}
     </div>
   </div>
 </template>
 
 <script>
+
 export default {
   name: 'App',
   data(){
@@ -71,12 +72,13 @@ export default {
       // Get a driver instance
       return this.$neo4j.getDriver()
     },
-    testQuery() {
+   async testQuery() {
       // Get a session from the driver
       let obj = this.propObject
+      let receiver = null
       const session = this.$neo4j.getSession()
       // Or you can just call this.$neo4j.run(cypher, params)
-      session.run(
+     await session.run(
           "MATCH (b: City {name: $data.city})" +
           "MATCH (c: WarmingType {name: $data.warmingType})" +
           "MATCH (d: HeatingType {name: $data.heatingType})" +
@@ -110,40 +112,47 @@ export default {
       )
           .then( ()=>
           {
-            return session.run( "MATCH (a:Property) WHERE a.title = $title RETURN a.title AS title, a.description AS description",
-                {
-                  title: obj.title
-                }
-            )
+            return session.run("match(n:Property) return n")
           })
-          .then( function( result ) {
-            console.log( result.records[0].get("title") + " " + result.records[0].get("description") );
-            session.close();
-          });
+         .then(function (result){
+           let outArr = []
+           console.log(result.records[0]._fields[0].identity.low)
+           for (let i = 0; i < result.records.length; i++){
+             outArr.push(result.records[i]._fields[0].properties)
+             console.log(outArr)
+           }
+           receiver = outArr
+           console.log(receiver)
+         })
+         .catch(function (err){
+           console.log(err)
+         })
+     this.output = receiver
+     console.log(this.output)
     },
-    async results(){
-      const session = this.$neo4j.getSession()
-      let receiver = null
-      await session.run("match(n:Property) return n")
-      .then(function (result){
-        let outArr = []
-        console.log(result.records[0]._fields[0].identity.low)
-        outArr = result.records[0]._fields[0].properties
-        console.log(outArr)
-        receiver = outArr
-      })
-      .catch(function (err){
-        console.log(err)
-      })
-
-       this.output = receiver
-    },
+    // async results(){
+    //   const session = this.$neo4j.getSession()
+    //   let receiver = null
+    //   await session.run("match(n:Property) return n")
+    //   .then(function (result){
+    //     let outArr = []
+    //     console.log(result.records[0]._fields[0].identity.low)
+    //     for (let i = 0; i < result.records.length; i++){
+    //     outArr.push(result.records[i]._fields[0].properties)
+    //     console.log(outArr)
+    //     }
+    //     receiver = outArr
+    //   })
+    //   .catch(function (err){
+    //     console.log(err)
+    //   })
+    //
+    //    this.output = receiver
+    //   console.log(this.output)
+    // },
     log(){
       console.log(this.output)
     },
-    pusher(x){
-      return this.output = x
-    }
   }
 }
 </script>
