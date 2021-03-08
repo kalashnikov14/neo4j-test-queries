@@ -1,16 +1,29 @@
 <template>
   <div id="app">
+    <div>
   <button @click="connect()">Connect</button>
   <button @click="testQuery()">Connect</button>
+      <br>
+      <br>
+      <button @click="results()">results</button>
+      <br>
+      <button @click="log()">log</button>
+    </div>
+    <div>
+      <br>
+      title: {{output.title}}
+      <br>
+      seller: {{output.sellerName}}
+    </div>
   </div>
 </template>
 
 <script>
 export default {
   name: 'App',
-
   data(){
     return{
+      output: {},
       protocol: 'bolt',
       host: 'localhost',
       port: 7687,
@@ -64,23 +77,35 @@ export default {
       const session = this.$neo4j.getSession()
       // Or you can just call this.$neo4j.run(cypher, params)
       session.run(
-          "MATCH (b: City {name: $city})" +
-          "MATCH (c: LayoutType {name: $layoutType})" +
-          "CREATE (a:Property {title:$title, description:$description})-[:IN_CITY]->(b), (a)-[:LAYOUT]->(c)",
+          "MATCH (b: City {name: $data.city})" +
+          "MATCH (c: WarmingType {name: $data.warmingType})" +
+          "MATCH (d: HeatingType {name: $data.heatingType})" +
+          "MATCH (e: ConstructionType {name: $data.constructionType})" +
+          "MATCH (f: Condition {name: $data.condition})" +
+          "MATCH (g: LayoutType {name: $data.layoutType})" +
+          "CREATE (a:Property {title:$data.title," +
+          "description:$data.description," +
+          "cost:$data.cost," +
+          "residentialComplex: $data.residentialComplex," +
+          "ceilingH: $data.ceilingH," +
+          "closedArea:$data.closedArea," +
+          "parking:$data.parking," +
+          "storeyNum:$data.storeyNum," +
+          "show:$data.show," +
+          "liked:$data.liked," +
+          "top:$data.top," +
+          "id:$data.id," +
+          "sellerName:$data.sellerName," +
+          "phone:$data.phone," +
+          "areaM2:$data.areaM2" +
+          "})-[:IN_CITY]->(b)," +
+          "(a)-[:WARMING_TYPE]->(c)," +
+          "(a)-[:HEATING_TYPE]->(d)," +
+          "(a)-[:CONSTRUCTION_TYPE]->(e)," +
+          "(a)-[:CONDITION]->(f)," +
+          "(a)-[:LAYOUT]->(g)",
           {
-            title: obj.title,
-            description: obj.description,
-            city: obj.city,
-            condition: obj.condition,
-            warmingType: obj.warmingType,
-            layoutType: obj.layoutType,
-            closedArea: obj.closedArea,
-            parking: obj.parking,
-            ceilingH: obj.ceilingH,
-            storeyNum: obj.storeyNum,
-            costForM2: obj.costForM2,
-            areaM2: obj.areaM2,
-
+            data : obj
           }
       )
           .then( ()=>
@@ -95,6 +120,29 @@ export default {
             console.log( result.records[0].get("title") + " " + result.records[0].get("description") );
             session.close();
           });
+    },
+    async results(){
+      const session = this.$neo4j.getSession()
+      let receiver = null
+      await session.run("match(n:Property) return n")
+      .then(function (result){
+        let outArr = []
+        console.log(result.records[0]._fields[0].identity.low)
+        outArr = result.records[0]._fields[0].properties
+        console.log(outArr)
+        receiver = outArr
+      })
+      .catch(function (err){
+        console.log(err)
+      })
+
+       this.output = receiver
+    },
+    log(){
+      console.log(this.output)
+    },
+    pusher(x){
+      return this.output = x
     }
   }
 }
