@@ -1,12 +1,13 @@
 <template>
   <div id="app">
     <div>
-  <button @click="connect()">Connect</button>
+<!--  <button @click="connect()">Connect</button>-->
   <button @click="testQuery()">Connect</button>
       <br>
       <br>
       <br>
       <button @click="log()">log</button>
+      <br>
     </div>
     <div v-for="n in output"
          :key="n">
@@ -16,6 +17,7 @@
       seller: {{n.sellerName}}
     </div>
   </div>
+
 </template>
 
 <script>
@@ -24,7 +26,8 @@ export default {
   name: 'App',
   data(){
     return{
-      output: {},
+      image: null,
+      output: [],
       protocol: 'bolt',
       host: 'localhost',
       port: 7687,
@@ -61,21 +64,40 @@ export default {
       },
     }
   },
+
+  mounted() {
+    this.$neo4j.connect(this.protocol, this.host, this.port, this.username, this.password)
+    const session = this.$neo4j.getSession()
+
+    const vm = this
+    session.run("match(n:Property) return n")
+        .then(function (result){
+          let outArr = []
+          console.log(result)
+          console.log(result.records[0]._fields[0].identity.low)
+          for (let i = 0; i < result.records.length; i++){
+            outArr.push(result.records[i]._fields[0].properties)
+          }
+          console.log(outArr)
+          vm.$store.dispatch('addData', outArr)
+          vm.output = vm.$store.getters['getDbLog']
+        })
+        .catch(function (err){
+          console.log(err)
+        })
+
+  },
+
   methods: {
-    connect() {
-      return this.$neo4j.connect(this.protocol, this.host, this.port, this.username, this.password)
-      // .then(driver => {
-      //   // Update the context of your app
-      // })
-    },
+
     driver() {
       // Get a driver instance
       return this.$neo4j.getDriver()
     },
    async testQuery() {
+      const vm = this
       // Get a session from the driver
       let obj = this.propObject
-      let receiver = null
       const session = this.$neo4j.getSession()
       // Or you can just call this.$neo4j.run(cypher, params)
      await session.run(
@@ -116,19 +138,17 @@ export default {
           })
          .then(function (result){
            let outArr = []
+           console.log(result)
            console.log(result.records[0]._fields[0].identity.low)
            for (let i = 0; i < result.records.length; i++){
              outArr.push(result.records[i]._fields[0].properties)
-             console.log(outArr)
            }
-           receiver = outArr
-           console.log(receiver)
+           vm.$store.dispatch('addData', outArr)
+           vm.output = vm.$store.getters['getDbLog']
          })
          .catch(function (err){
            console.log(err)
          })
-     this.output = receiver
-     console.log(this.output)
     },
     // async results(){
     //   const session = this.$neo4j.getSession()
@@ -151,8 +171,10 @@ export default {
     //   console.log(this.output)
     // },
     log(){
-      console.log(this.output)
+      console.log(this.$store.getters['getDbLog'])
     },
   }
 }
 </script>
+<style scoped>
+</style>

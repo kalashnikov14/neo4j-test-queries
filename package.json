@@ -8,10 +8,12 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "base64-img": "^1.0.4",
     "core-js": "^3.6.5",
+    "neo4j-driver": "^4.2.3",
     "vue": "^2.6.11",
     "vue-neo4j": "^0.4.5",
-    "neo4j-driver": "^4.2.3"
+    "vuex": "^3.6.2"
   },
   "devDependencies": {
     "@vue/cli-plugin-babel": "~4.5.0",
