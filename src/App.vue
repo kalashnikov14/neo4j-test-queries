@@ -1,16 +1,16 @@
 <template>
   <div id="app">
     <div>
-<!--  <button @click="connect()">Connect</button>-->
-  <button @click="testQuery()">Connect</button>
+      <!--  <button @click="connect()">Connect</button>-->
+      <button @click="testQuery()">Connect</button>
       <br>
       <br>
       <br>
       <button @click="log()">log</button>
       <br>
     </div>
-    <div v-for="n in output"
-         :key="n">
+    <div v-for="(n, idx) in output"
+         :key="idx">
       <br>
       title: {{n.title}}
       <br>
@@ -38,7 +38,6 @@ export default {
         title: 'fourth add',
         description: 'Lorem ipsum dolor sit amet, consectetur adipisicing elit. Hic nisi possimus ratione sint?',
         top: true,
-        id: '1',
         src: [
           {imageURL: 'https://cdn.vuetifyjs.com/images/carousel/squirrel.jpg'},
           {imageURL: 'https://cdn.vuetifyjs.com/images/carousel/bird.jpg'},
@@ -50,8 +49,8 @@ export default {
         cost: 23345345,
         city:'Kyiv',
         residentialComplex: 'test',
-        constructionType: 'govno i palki',
-        heatingType: 'pechka na drovah',
+        constructionType: 'Type II',
+        heatingType: 'Steam Radiant Heat Systems',
         condition: 'for renovation',
         warmingType: 'mineral wool',
         layoutType: '3-room',
@@ -61,6 +60,9 @@ export default {
         storeyNum: 324,
         costForM2: 234,
         areaM2: 324,
+        wallsType: 'Masonry Wall',
+        classItem: 'usual',
+        id: this.getRand(4,3243),
       },
     }
   },
@@ -81,6 +83,7 @@ export default {
           console.log(outArr)
           vm.$store.dispatch('addData', outArr)
           vm.output = vm.$store.getters['getDbLog']
+          console.log(vm.id)
         })
         .catch(function (err){
           console.log(err)
@@ -90,26 +93,30 @@ export default {
 
   methods: {
 
-    driver() {
-      // Get a driver instance
-      return this.$neo4j.getDriver()
+    getRand (min, max) {
+      min = Math.ceil(min);
+      max = Math.floor(max);
+      return Math.floor(Math.random() * (max - min)) + min; //Максимум не включается, минимум включается
     },
-   async testQuery() {
+    async testQuery() {
       const vm = this
       // Get a session from the driver
       let obj = this.propObject
       const session = this.$neo4j.getSession()
       // Or you can just call this.$neo4j.run(cypher, params)
-     await session.run(
+      await session.run(
           "MATCH (b: City {name: $data.city})" +
           "MATCH (c: WarmingType {name: $data.warmingType})" +
           "MATCH (d: HeatingType {name: $data.heatingType})" +
           "MATCH (e: ConstructionType {name: $data.constructionType})" +
           "MATCH (f: Condition {name: $data.condition})" +
           "MATCH (g: LayoutType {name: $data.layoutType})" +
+          "MATCH (h: WallsType {name: $data.wallsType})" +
+          "MATCH (k: Class {name: $data.classItem})" +
           "CREATE (a:Property {title:$data.title," +
           "description:$data.description," +
           "cost:$data.cost," +
+          "id:$data.id," +
           "residentialComplex: $data.residentialComplex," +
           "ceilingH: $data.ceilingH," +
           "closedArea:$data.closedArea," +
@@ -127,7 +134,9 @@ export default {
           "(a)-[:HEATING_TYPE]->(d)," +
           "(a)-[:CONSTRUCTION_TYPE]->(e)," +
           "(a)-[:CONDITION]->(f)," +
-          "(a)-[:LAYOUT]->(g)",
+          "(a)-[:LAYOUT]->(g)," +
+          "(a)-[:CLASS_TYPE]->(k)," +
+          "(a)-[:WALLS_TYPE]->(h)",
           {
             data : obj
           }
@@ -136,19 +145,19 @@ export default {
           {
             return session.run("match(n:Property) return n")
           })
-         .then(function (result){
-           let outArr = []
-           console.log(result)
-           console.log(result.records[0]._fields[0].identity.low)
-           for (let i = 0; i < result.records.length; i++){
-             outArr.push(result.records[i]._fields[0].properties)
-           }
-           vm.$store.dispatch('addData', outArr)
-           vm.output = vm.$store.getters['getDbLog']
-         })
-         .catch(function (err){
-           console.log(err)
-         })
+          .then(function (result){
+            let outArr = []
+            console.log(result)
+            console.log(result.records[0]._fields[0].identity.low)
+            for (let i = 0; i < result.records.length; i++){
+              outArr.push(result.records[i]._fields[0].properties)
+            }
+            vm.$store.dispatch('addData', outArr)
+            vm.output = vm.$store.getters['getDbLog']
+          })
+          .catch(function (err){
+            console.log(err)
+          })
     },
     // async results(){
     //   const session = this.$neo4j.getSession()
