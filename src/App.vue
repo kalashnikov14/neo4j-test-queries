@@ -72,18 +72,26 @@ export default {
     const session = this.$neo4j.getSession()
 
     const vm = this
-    session.run("match(n:Property) return n")
+    //"match(a:Property)-[r]-(t) return collect(t.name)"
+    session.run("match(n:Property)-[k]-(s) return distinct(n), collect(s.name) as scores, collect(k.name) as rel")
         .then(function (result){
           let outArr = []
+          let propArr = {}
           console.log(result)
-          console.log(result.records[0]._fields[0].identity.low)
           for (let i = 0; i < result.records.length; i++){
+            let arr1 = result.records[i]._fields[1]
+            let arr2 = result.records[i]._fields[2]
+            for (let k = 0; k < result.records[i]._fields[2].length; k++){
+              propArr[arr2[k]] = arr1[k]
+            }
+            console.log(propArr)
+            Object.assign(result.records[i]._fields[0].properties, propArr)
             outArr.push(result.records[i]._fields[0].properties)
           }
           console.log(outArr)
           vm.$store.dispatch('addData', outArr)
           vm.output = vm.$store.getters['getDbLog']
-          console.log(vm.id)
+          console.log(vm.$store.getters['getDbLog'])
         })
         .catch(function (err){
           console.log(err)
@@ -129,14 +137,14 @@ export default {
           "sellerName:$data.sellerName," +
           "phone:$data.phone," +
           "areaM2:$data.areaM2" +
-          "})-[:IN_CITY]->(b)," +
-          "(a)-[:WARMING_TYPE]->(c)," +
-          "(a)-[:HEATING_TYPE]->(d)," +
-          "(a)-[:CONSTRUCTION_TYPE]->(e)," +
-          "(a)-[:CONDITION]->(f)," +
-          "(a)-[:LAYOUT]->(g)," +
-          "(a)-[:CLASS_TYPE]->(k)," +
-          "(a)-[:WALLS_TYPE]->(h)",
+          "})-[:IN_CITY {name: 'city'}]->(b)," +
+          "(a)-[:WARMING_TYPE {name: 'warmingType'}]->(c)," +
+          "(a)-[:HEATING_TYPE {name: 'heatingType'}]->(d)," +
+          "(a)-[:CONSTRUCTION_TYPE {name: 'constructionType'}]->(e)," +
+          "(a)-[:CONDITION {name: 'condition'}]->(f)," +
+          "(a)-[:LAYOUT {name: 'layoutType'}]->(g)," +
+          "(a)-[:CLASS_TYPE {name: 'classItem'}]->(k)," +
+          "(a)-[:WALLS_TYPE {name: 'wallsType'}]->(h)",
           {
             data : obj
           }
